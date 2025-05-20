@@ -1,0 +1,31 @@
+#!/bin/bash
+
+$hdfs_wd = /user/mohamed/kmeans_spark
+
+# copy input file to hdfs
+hdfs dfs -copyFromLocal ./$1 $hdfs_wd
+
+# remove output directory (if exists)
+hdfs dfs -rm /use/output/*
+hdfs dfs -rmdir /user/mohamed/kmeans_spark/output
+
+# remove centroids
+hdfs dfs -rm /user/mohamed/kmeans_spark/centroids/*
+hdfs dfs -rmdir /user/mohamed/kmeans_spark/centroids
+
+# run MapReduce
+spark-submit --class main.Main \
+ --master local[*] ./untitled/target/kmeans_spark-1.0.jar \
+hdfs://localhost:9000/user/mohamed/kmeans_spark/$1 \
+hdfs://localhost:9000/user/mohamed/kmeans_spark/output \
+$2 \
+$3 > log.txt
+
+# copy result to local
+hdfs dfs -copyToLocal /user/mohamed/kmeans_spark/output/part-00000 ./acc
+
+# rename output file, effectively deleting the old output file
+mv ./acc/part-00000 ./acc/out.txt
+
+# print execution time
+grep "Took" log.txt
